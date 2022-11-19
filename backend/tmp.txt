@@ -1,0 +1,23 @@
+let rawdata = fs.readFileSync("out.json");
+let locationNames = JSON.parse(rawdata);
+let start = 8001;
+const queries = [];
+for (let i = 0; i < 266; i++) {
+  queries.push(
+    `UPDATE Property set locationName = '${locationNames[i].replace(
+      "'",
+      ""
+    )}' where propertyID between ${start} and ${start + 7}`
+  );
+  start += 8;
+}
+app.post("/addLocations", (req, res) => {
+  for (let i = 0; i < 1000; i++) {
+    connection.query(queries[i], (err, result) => {
+      if (err) {
+        throw err;
+      }
+    });
+  }
+  res.send("Locations added");
+});
