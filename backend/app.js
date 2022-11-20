@@ -181,6 +181,87 @@ app.post("/getUnitTypes", (req, res) => {
   );
 });
 
+app.post("/getBrokerPhone", (req, res) => {
+  let brokerName = req.body.brokerName;
+
+  connection.query(
+    "SELECT PhoneNumber FROM brokercompany where CompanyName=?",
+    [brokerName],
+    (err, result) => {
+      if (err) throw err;
+
+      res.send(result);
+    }
+  );
+});
+
+app.post("/getBroker", (req, res) => {
+  let brokerPhoneNumber = req.body.brokerPhoneNumber;
+  connection.query(
+    `select avg(R.ReviewScore) as avg from reviews R inner join agent A on A.ContactNumber = R.AgentContactNumber where BrokerCompanyPhoneNumber=${brokerPhoneNumber}`,
+    (err, result) => {
+      if (err) throw err;
+      res.send(result);
+    }
+  );
+});
+
+app.post("/getTopBrokers", (req, res) => {
+  connection.query(
+    `select B.CompanyName, sum(P.Price) as total_price, sum(P.Size) as total_size, count(distinct ContactNumber) 
+    as numOfAgents, count(P.PropertyID) as Listings 
+    from brokercompany B inner join agent A on B.PhoneNumber+"\r" = A.BrokerCompanyPhoneNumber 
+    inner join Property P on P.AgentContactNumber=A.ContactNumber 
+    group by B.CompanyName 
+    order by Listings desc 
+    limit 5`,
+    (err, result) => {
+      if (err) throw err;
+      res.send(result);
+    }
+  );
+});
+
+app.post("/getDevelopment", (req, res) => {
+  let developmentName = req.body.developmentName + "\r";
+  connection.query(
+    `select AreaName, PropertyID, Price, PropertyType, Size, PropertyType
+    from location L inner join property P on L.locationName = P.locationName 
+    inner join developmentproject D on D.LocationName = L.locationName 
+    where D.Developer='${developmentName}'`,
+    (err, result) => {
+      if (err) throw err;
+      res.send(result);
+    }
+  );
+});
+
+app.post("/getAllPropertyTypes", (req, res) => {
+  connection.query(
+    "SELECT Distinct PropertyType FROM property",
+    (err, result) => {
+      if (err) throw err;
+      res.send(result);
+    }
+  );
+});
+
+app.post("/getTopAreas", (req, res) => {
+  let propertyType = req.body.propertyType;
+  connection.query(
+    `select AreaName, sum(Price) as total_price, sum(Size) as total_size, count(PropertyID) as listings from Location L
+    inner join Property P on L.LocationName = P.LocationName
+    where PropertyType='${propertyType}'
+    group by 1
+    order by listings desc
+    limit 10`,
+    (err, result) => {
+      if (err) throw err;
+      res.send(result);
+    }
+  );
+});
+
 app.listen(port, () => {
   console.log(`server started on port ${port}`);
 });
